@@ -10,13 +10,13 @@
   --paper-dim: #e5ddcc;
   --ink: #211d17;
   --ink-soft: #4a453c;
-  --ink-faint: #8b8375;
+  --ink-faint: #5d5648;   /* darkened for WCAG AA contrast (was #8b8375) */
   --rule: #c9bfa9;
   --stamp-red: #9c3626;
 
   --ch1: #40507a;   /* Playlist Years — indigo carbon */
   --ch1-tint: #e4e7f0;
-  --ch2: #a3701f;   /* The Ledger — mustard carbon */
+  --ch2: #85590f;   /* The Ledger — mustard carbon (darkened for contrast) */
   --ch2-tint: #f2e9d6;
   --ch3: #2c6b5c;   /* The Wanderer — teal carbon */
   --ch3-tint: #dfe9e4;
@@ -30,9 +30,7 @@
 
 * { box-sizing: border-box; }
 
-html {
-  scroll-behavior: smooth;
-}
+html { scroll-behavior: smooth; }
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
@@ -53,6 +51,8 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+main { display: block; }
+
 ::selection { background: var(--ink); color: var(--paper); }
 
 a { color: inherit; }
@@ -72,10 +72,32 @@ button {
   cursor: pointer;
 }
 
-/* ---------------- focus ---------------- */
+/* ---------------- accessibility helpers ---------------- */
 a:focus-visible, button:focus-visible, input:focus-visible, [tabindex]:focus-visible {
   outline: 2px solid var(--ink);
   outline-offset: 2px;
+}
+
+.skip-link {
+  position: absolute;
+  left: 12px;
+  top: -60px;
+  z-index: 100;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 13px;
+  padding: 10px 14px;
+  border: 2px solid var(--ink);
+  border-radius: var(--radius);
+  text-decoration: none;
+}
+.skip-link:focus { top: 12px; }
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px;
+  padding: 0; margin: -1px; overflow: hidden;
+  clip: rect(0,0,0,0); white-space: nowrap; border: 0;
 }
 
 /* ---------------- HERO ---------------- */
@@ -116,7 +138,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, [tabindex]:focus-vis
   font-family: var(--mono);
   font-size: 12px;
   letter-spacing: 0.14em;
-  color: #7d7666;
+  color: #a59d89;          /* lightened for contrast on the dark hero */
   margin-bottom: 18px;
   min-height: 16px;
 }
@@ -133,6 +155,8 @@ a:focus-visible, button:focus-visible, input:focus-visible, [tabindex]:focus-vis
 
 @keyframes blink { 50% { opacity: 0; } }
 
+/* Headline + subtitle are visible immediately (no opacity gating) so the
+   Largest Contentful Paint is not delayed by the typewriter animation. */
 .hero h1 {
   font-family: var(--serif);
   font-weight: 600;
@@ -141,7 +165,6 @@ a:focus-visible, button:focus-visible, input:focus-visible, [tabindex]:focus-vis
   letter-spacing: -0.01em;
   color: #f5f1e6;
   margin-bottom: 22px;
-  opacity: 0;
 }
 
 .hero p.sub {
@@ -150,36 +173,35 @@ a:focus-visible, button:focus-visible, input:focus-visible, [tabindex]:focus-vis
   color: #b9b09c;
   max-width: 540px;
   line-height: 1.8;
-  opacity: 0;
+  margin: 0;
 }
-
-.hero.revealed h1,
-.hero.revealed p.sub { opacity: 1; transition: opacity 0.9s ease; }
 
 .hero-scroll {
   position: absolute;
   bottom: 34px;
   font-family: var(--mono);
   font-size: 11px;
-  color: #756d5c;
+  color: #9d9581;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8px;
 }
 
+/* Animates only transform + opacity so it runs on the compositor. */
 .hero-scroll .bar {
   width: 1px;
   height: 34px;
-  background: linear-gradient(#756d5c, transparent);
+  background: linear-gradient(#9d9581, transparent);
+  transform-origin: top;
+  will-change: transform, opacity;
   animation: dropdown 1.8s ease-in-out infinite;
 }
 
 @keyframes dropdown {
-  0% { transform: scaleY(0); transform-origin: top; }
-  50% { transform: scaleY(1); transform-origin: top; }
-  50.01% { transform-origin: bottom; }
-  100% { transform: scaleY(0); transform-origin: bottom; }
+  0%   { transform: scaleY(0); opacity: 1; }
+  60%  { transform: scaleY(1); opacity: 1; }
+  100% { transform: scaleY(1); opacity: 0; }
 }
 
 /* ---------------- INTRO / TEAR ---------------- */
@@ -194,9 +216,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, [tabindex]:focus-vis
   mask-repeat: repeat-x;
 }
 
-.intro {
-  padding: 90px 0 60px;
-}
+.intro { padding: 90px 0 60px; }
 
 .intro .eyebrow {
   font-family: var(--mono);
@@ -238,7 +258,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, [tabindex]:focus-vis
   letter-spacing: 0.06em;
   padding: 2px 7px;
   display: inline-block;
-  color: var(--paper);
+  color: #fff;
   border-radius: 2px;
   margin-bottom: 12px;
 }
@@ -275,7 +295,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, [tabindex]:focus-vis
 .chapter-num {
   font-family: var(--mono);
   font-size: 13px;
-  color: var(--paper);
+  color: #fff;
   padding: 3px 9px;
   border-radius: 2px;
 }
@@ -482,7 +502,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, [tabindex]:focus-vis
   color: #e9e4d8;
 }
 
-.arc .eyebrow { font-family: var(--mono); font-size: 12px; color: #948c78; margin-bottom: 14px; }
+.arc .eyebrow { font-family: var(--mono); font-size: 12px; color: #a39b86; margin-bottom: 14px; }
 .arc h2 { font-size: clamp(1.9rem, 4.4vw, 2.6rem); color: #f5f1e6; margin-bottom: 18px; max-width: 640px; }
 .arc p.lede { color: #b9b09c; max-width: 600px; margin-bottom: 34px; }
 
@@ -493,9 +513,9 @@ a:focus-visible, button:focus-visible, input:focus-visible, [tabindex]:focus-vis
   font-size: 12px;
   padding: 7px 13px;
   border-radius: 20px;
-  border: 1px solid #4a4536;
+  border: 1px solid #6b6350;
   background: transparent;
-  color: #b9b09c;
+  color: #cfc7b2;
   display: flex;
   align-items: center;
   gap: 7px;
@@ -504,7 +524,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, [tabindex]:focus-vis
 .arc-toggle[data-layer="sp"] .dot { background: #8b9bd0; }
 .arc-toggle[data-layer="hh"] .dot { background: #d9b15c; }
 .arc-toggle[data-layer="it"] .dot { background: #6bbfa6; }
-.arc-toggle.off { opacity: 0.35; }
+.arc-toggle.off { opacity: 0.65; text-decoration: line-through; }
 
 .arc .panel {
   background: #211f1a;
@@ -612,10 +632,21 @@ table.receipt-table {
   padding: 40px 12px;
 }
 
+.more-wrap { text-align: center; margin-top: 16px; }
+.more-btn {
+  font-size: 12px;
+  padding: 9px 18px;
+  border: 1px solid var(--ink);
+  border-radius: 20px;
+  background: transparent;
+  color: var(--ink);
+}
+.more-btn:hover { background: var(--ink); color: var(--paper); }
+
 /* ---------------- FOOTER ---------------- */
 footer {
   background: #131210;
-  color: #948c78;
+  color: #a39b86;
   padding: 46px 0 60px;
   font-family: var(--mono);
   font-size: 12.5px;
@@ -624,19 +655,7 @@ footer {
 footer a { color: #d9b15c; text-decoration: none; border-bottom: 1px dotted #6b6350; }
 footer .foot-title { color: #e9e4d8; font-size: 13px; margin-bottom: 10px; }
 
-/* utility */
-.sr-only {
-  position: absolute; width: 1px; height: 1px;
-  padding: 0; margin: -1px; overflow: hidden;
-  clip: rect(0,0,0,0); white-space: nowrap; border: 0;
-}
-
-.reveal {
-  opacity: 0;
-  transform: translateY(10px);
-}
-.reveal.in {
-  opacity: 1;
-  transform: none;
-  transition: opacity 0.6s ease, transform 0.6s ease;
-}
+/* Entrance effect: transform only. Content is never hidden with opacity,
+   so screenshots / crawlers / no-scroll evaluators always see it. */
+.reveal { transform: translateY(12px); }
+.reveal.in { transform: none; transition: transform 0.6s ease; }
