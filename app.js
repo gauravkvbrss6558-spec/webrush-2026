@@ -24,14 +24,49 @@
 
   const inkColors = { sp: "#40507a", hh: "#a3701f", it: "#2c6b5c" };
 
-  Chart.defaults.font.family = "'Space Mono', monospace";
-  Chart.defaults.font.size = 11;
-  Chart.defaults.color = "#4a453c";
+  // Chart.js loads from a CDN. If that request is slow, blocked, or fails
+  // (flaky network, an ad-/script-blocker, or a sandboxed evaluation
+  // environment with no internet access) `Chart` is undefined here. Without
+  // this guard that reference throws immediately and kills this entire
+  // script before ANY of the sections below run — which is exactly the
+  // "everything shows a dash" failure mode. hasChart lets every section
+  // below degrade gracefully (stats/search/lists still work; only the
+  // canvas charts are skipped) instead of the whole page going dark.
+  const hasChart = typeof Chart !== "undefined";
+  if (hasChart) {
+    Chart.defaults.font.family = "'Space Mono', monospace";
+    Chart.defaults.font.size = 11;
+    Chart.defaults.color = "#4a453c";
+  } else {
+    console.error("Chart.js failed to load — charts will be skipped, but stats/search still run.");
+  }
+
+  // Run each independent section in its own try/catch so a bug or missing
+  // element in one section (e.g. a chart) can never take down the rest of
+  // the page (e.g. the receipts search).
+  function safe(name, fn) {
+    try {
+      fn();
+    } catch (err) {
+      console.error(`"${name}" section failed:`, err);
+    }
+  }
+
+  // No-op stand-in used wherever a chart would normally go, so code that
+  // later calls chart.update()/chart.setActiveElements()/chart.data... never
+  // throws just because Chart.js didn't load.
+  function noopChart() {
+    return { update() {}, setActiveElements() {}, data: { datasets: [] } };
+  }
+  function makeChart(ctx, config) {
+    if (!hasChart || !ctx) return noopChart();
+    return new Chart(ctx, config);
+  }
 
   /* ---------------------------------------------------------
      HERO — typewriter reveal, respects reduced motion
   --------------------------------------------------------- */
-  (function hero() {
+  safe("hero", function hero() {
     const hero = document.getElementById("hero");
     const printEl = document.getElementById("heroPrint");
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -55,12 +90,12 @@
       }
     }
     setTimeout(type, 300);
-  })();
+  });
 
   /* ---------------------------------------------------------
      Scroll reveal for panels/sections
   --------------------------------------------------------- */
-  (function scrollReveal() {
+  safe("scrollReveal", function scrollReveal() {
     const els = document.querySelectorAll(".panel, .stat-row, .source-grid");
     els.forEach((el) => el.classList.add("reveal"));
     const io = new IntersectionObserver(
@@ -75,12 +110,12 @@
       { threshold: 0.12 }
     );
     els.forEach((el) => io.observe(el));
-  })();
+  });
 
   /* ===========================================================
      CHAPTER 1 — SPOTIFY
   =========================================================== */
-  (function chapter1() {
+  safe("chapter1", function chapter1() {
     document.getElementById("spStatHours").textContent = fmtNum(stats.spTotalHours);
     document.getElementById("spStatPlays").textContent = fmtNum(stats.spTotalPlays);
     document.getElementById("spStatArtist").textContent = stats.spTopArtist;
@@ -88,7 +123,7 @@
     document.getElementById("spStatNight").textContent = monthLabel(peakNight.month);
 
     const ctx = document.getElementById("spChart");
-    const chart = new Chart(ctx, {
+    const chart = makeChart(ctx, {
       type: "line",
       data: {
         labels: spMonths.map((m) => monthLabel(m.month)),
@@ -149,12 +184,12 @@
     }
     scrub.addEventListener("input", () => renderSlip(+scrub.value));
     renderSlip(0);
-  })();
+  });
 
   /* ===========================================================
      CHAPTER 2 — HOUSEHOLD LEDGER
   =========================================================== */
-  (function chapter2() {
+  safe("chapter2", function chapter2() {
     const totalExpense = hhMonths.reduce((s, m) => s + m.expense, 0);
     const totalIncome = hhMonths.reduce((s, m) => s + m.income, 0);
     const catCount = {};
@@ -169,7 +204,7 @@
     document.getElementById("hhStatTxns").textContent = fmtNum(hhMonths.reduce((s, m) => s + m.txns, 0));
 
     const ctx = document.getElementById("hhChart");
-    const chart = new Chart(ctx, {
+    const chart = makeChart(ctx, {
       type: "bar",
       data: {
         labels: hhMonths.map((m) => monthLabel(m.month)),
@@ -229,12 +264,12 @@
       li.innerHTML = `<b>${monthLabel(n.month)}</b> — ${escapeHtml(n.note)}`;
       list.appendChild(li);
     });
-  })();
+  });
 
   /* ===========================================================
      CHAPTER 3 — INDIA TRANSACT TRAIL
   =========================================================== */
-  (function chapter3() {
+  safe("chapter3", function chapter3() {
     document.getElementById("itStatAmt").textContent = fmtINR(stats.itTotalAmt);
     document.getElementById("itStatCities").textContent = fmtNum(stats.itUniqueCities);
     document.getElementById("itStatFlag").textContent = fmtNum(stats.itTotalFlagged);
@@ -246,7 +281,7 @@
     document.getElementById("itStatCat").textContent = topCat ? topCat[0].replace(/_/g, " ") : "—";
 
     const ctx = document.getElementById("itChart");
-    new Chart(ctx, {
+    makeChart(ctx, {
       type: "bar",
       data: {
         labels: itMonths.map((m) => monthLabel(m.month)),
@@ -303,12 +338,12 @@
       `;
       flagWrap.appendChild(div);
     });
-  })();
+  });
 
   /* ===========================================================
      LIFE ARC — normalized overlay
   =========================================================== */
-  (function arc() {
+  safe("arc", function arc() {
     // build unified month axis 2013-01 .. 2024-12
     const months = [];
     for (let y = 2013; y <= 2024; y++) {
@@ -333,7 +368,7 @@
     const itData = norm(itMap);
 
     const ctx = document.getElementById("arcChart");
-    const chart = new Chart(ctx, {
+    const chart = makeChart(ctx, {
       type: "line",
       data: {
         labels: months.map(monthLabel),
@@ -367,12 +402,12 @@
     const insight = document.getElementById("arcInsight");
     const direction = stats.corrSkipExpense < 0 ? "fell" : "rose";
     insight.innerHTML = `Between <b>${monthLabel(stats.sharedMonths[0])}</b> and <b>${monthLabel(stats.sharedMonths[1])}</b> — the only 39 months where the playlist and the ledger overlap — her Spotify skip-rate and her monthly spend move together with a correlation of <b>${stats.corrSkipExpense}</b>: in months she logged more expense, she ${direction} less likely to skip a track mid-play. It's a modest correlation, not a proof of anything — but it's the kind of pattern that only shows up once you stop reading the two files separately.`;
-  })();
+  });
 
   /* ===========================================================
      EXPLORER — search across all 5,294 receipts
   =========================================================== */
-  (function explorer() {
+  safe("explorer", function explorer() {
     const input = document.getElementById("searchInput");
     const body = document.getElementById("receiptBody");
     const countEl = document.getElementById("explorerCount");
@@ -440,7 +475,7 @@
     });
 
     render();
-  })();
+  });
 
   /* ---------------------------------------------------------
      utils
