@@ -1,0 +1,19 @@
+{
+  "name": "webrush-2026",
+  "version": "1.0.0",
+  "description": "Your Life, In Receipts: three real datasets reconstructed into one interactive life story. WebRush 6-Hour Frontend Hackathon 2026.",
+  "main": "app.js",
+  "scripts": {
+    "start": "npx --yes serve . -l 3000",
+    "check": "node --check app.js",
+    "test": "npm run check"
+  },
+  "keywords": ["frontend", "hackathon", "data-visualization", "chartjs", "vanilla-js"],
+  "author": "gauravkvbrss6558-spec",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gauravkvbrss6558-spec/webrush-2026.git"
+  },
+  "homepage": "https://webrush-2026.vercel.app"
+}
