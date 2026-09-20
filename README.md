@@ -2,7 +2,7 @@
 
 Built for **WebRush — 6-Hour Frontend Hackathon**, track *"Your Life, In Receipts"*.
 
-**[Live demo →](#)** _(add your deployed link here)_
+**[Live demo →](#)** _https://webrush-2026.vercel.app/_
 
 ## The idea
 
